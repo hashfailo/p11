@@ -1,226 +1,26 @@
+import { ArrowLeft, GitBranch, LoaderCircle, Sparkles, Users } from "lucide-react";
 import { useState } from "react";
 import { diverge } from "../api";
 import type { BranchContext, Lore, StoryEvent } from "../types";
 
-interface Props {
-  lore: Lore;
-  selectedEvent: StoryEvent;
-  onBranchReady: (ctx: BranchContext) => void;
-  onBack: () => void;
-}
+interface Props { lore: Lore; selectedEvent: StoryEvent; onBranchReady: (ctx: BranchContext) => void; onBack: () => void; }
 
-export default function DivergencePanel({
-  selectedEvent,
-  onBranchReady,
-  onBack,
-}: Props) {
-  const [whatIf, setWhatIf] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [branch, setBranch] = useState<BranchContext | null>(null);
-
-  const handleDiverge = async () => {
-    if (!whatIf.trim()) return;
-    setError("");
-    setLoading(true);
-    try {
-      const { branch_context } = await diverge(selectedEvent.id, whatIf);
-      setBranch(branch_context);
-      onBranchReady(branch_context);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getEventColor = (
-    event: StoryEvent & { is_divergence_point?: boolean; is_changed?: boolean },
-  ) => {
-    if (event.is_divergence_point)
-      return "border-amber-500 bg-amber-900/20 text-amber-200";
-    if (event.is_changed) return "border-cyan-500 bg-cyan-900/20 text-cyan-200";
-    return "border-gray-700 bg-gray-900 text-gray-300";
-  };
-
+export default function DivergencePanel({ selectedEvent, onBranchReady, onBack }: Props) {
+  const [whatIf, setWhatIf] = useState(""); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [branch, setBranch] = useState<BranchContext | null>(null);
+  const handleDiverge = async () => { if (!whatIf.trim()) return; setError(""); setLoading(true); try { const result = await diverge(selectedEvent.id, whatIf); setBranch(result.branch_context); onBranchReady(result.branch_context); } catch (e: any) { setError(e.message); } finally { setLoading(false); } };
+  const eventTone = (event: StoryEvent) => event.is_divergence_point ? "border-accent/60 bg-accent/[0.08]" : event.is_changed ? "border-accent/25 bg-surface-2" : "border-white/[0.06] bg-surface";
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={onBack}
-            className="text-gray-500 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-bold text-white">What If Explorer</h1>
-        </div>
-
-        {/* Selected Event */}
-        <div className="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4 mb-6">
-          <div className="text-xs text-amber-400 font-semibold uppercase tracking-wide mb-1">
-            Divergence Point
-          </div>
-          <div className="font-semibold text-amber-200">
-            {selectedEvent.title}
-          </div>
-          <div className="text-sm text-amber-300/70 mt-1">
-            {selectedEvent.description}
-          </div>
-        </div>
-
-        {/* What-If Input */}
-        {!branch && (
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 mb-6">
-            <label className="block text-sm font-semibold text-gray-300 mb-3">
-              Describe your hypothetical change:
-            </label>
-            <textarea
-              value={whatIf}
-              onChange={(e) => setWhatIf(e.target.value)}
-              placeholder={`e.g. "What if Maya never told Arjun that Ravi betrayed him?"`}
-              rows={3}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-none"
-            />
-            <button
-              onClick={handleDiverge}
-              disabled={loading || !whatIf.trim()}
-              className="mt-4 w-full py-3 rounded-lg bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 font-semibold transition-all disabled:opacity-50"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin">⚙️</span> Generating alternate
-                  timeline...
-                </span>
-              ) : (
-                "⚡ Generate Alternate Timeline"
-              )}
-            </button>
-            {error && (
-              <div className="mt-3 p-3 rounded-lg bg-red-900/40 border border-red-700 text-red-300 text-sm">
-                {error}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Timeline Comparison */}
-        {branch && (
-          <div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
-              <div className="text-xs text-purple-400 font-semibold uppercase tracking-wide mb-1">
-                Divergence Summary
-              </div>
-              <div className="text-gray-300">{branch.divergence_summary}</div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Original */}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-400 mb-3 flex items-center gap-2">
-                  <span>📗</span> Original Timeline
-                </h2>
-                <div className="space-y-2">
-                  {branch.original_branch.map((event, i) => (
-                    <div key={event.id} className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs flex-shrink-0 mt-3">
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 p-3 rounded-lg border border-gray-700 bg-gray-900">
-                        <div className="font-medium text-gray-300 text-sm">
-                          {event.title}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {event.description}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Alternate */}
-              <div>
-                <h2 className="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
-                  <span>🔀</span> Alternate Timeline
-                </h2>
-                <div className="space-y-2">
-                  {branch.alternate_branch.map((event, i) => (
-                    <div key={event.id} className="flex gap-3">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-3
-                        ${event.is_divergence_point ? "bg-amber-700 text-amber-200" : event.is_changed ? "bg-cyan-800 text-cyan-200" : "bg-gray-800 text-gray-500"}`}
-                      >
-                        {i + 1}
-                      </div>
-                      <div
-                        className={`flex-1 p-3 rounded-lg border ${getEventColor(event)}`}
-                      >
-                        <div className="font-medium text-sm">
-                          {event.title}
-                          {event.is_divergence_point && (
-                            <span className="ml-2 text-xs bg-amber-800/60 text-amber-300 px-1.5 py-0.5 rounded">
-                              diverge
-                            </span>
-                          )}
-                          {event.is_changed && !event.is_divergence_point && (
-                            <span className="ml-2 text-xs bg-cyan-800/60 text-cyan-300 px-1.5 py-0.5 rounded">
-                              changed
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs opacity-70 mt-1">
-                          {event.description}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Character States */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-semibold text-purple-300 mb-4">
-                Character States in Alternate Timeline
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(branch.character_states).map(([id, state]) => (
-                  <div key={id} className="bg-gray-800/60 rounded-lg p-3">
-                    <div className="font-semibold text-white mb-1">
-                      {state.name}
-                    </div>
-                    <div className="text-xs text-gray-400 mb-1">
-                      <span className="text-gray-600">Status:</span>{" "}
-                      {state.status}
-                    </div>
-                    <div className="text-xs text-gray-400 mb-1">
-                      <span className="text-gray-600">Feels:</span>{" "}
-                      {state.emotional_state}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      <span className="text-gray-600">Knows:</span>{" "}
-                      {state.key_knowledge}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setBranch(null);
-                  setWhatIf("");
-                }}
-                className="flex-1 py-3 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-all"
-              >
-                Try Different What-If
-              </button>
-            </div>
-          </div>
-        )}
+    <div className="min-h-screen bg-ink px-5 py-10 text-slate-100 sm:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center gap-4"><button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 transition hover:text-white"><ArrowLeft size={16} /> Back to lore</button><div className="h-4 w-px bg-white/10" /><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent"><GitBranch size={15} /> Branch studio</div></div>
+        <div className="mb-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">03 / Diverge</p><h1 className="mt-3 text-4xl font-semibold tracking-[-0.03em] text-stone-100 sm:text-5xl">What if this moment<br /><span className="text-accent">went another way?</span></h1></div><div className="rounded-2xl border border-accent/20 bg-accent/[0.05] p-5 shadow-neumorphic"><div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent"><Sparkles size={14} /> Selected moment</div><h2 className="font-semibold text-stone-100">{selectedEvent.title}</h2><p className="mt-2 text-sm leading-6 text-slate-400">{selectedEvent.description}</p></div></div>
+        {!branch && <div className="mx-auto max-w-3xl animate-rise-in"><div className="rounded-2xl bg-surface p-6 shadow-neumorphic sm:p-8"><label className="text-sm font-semibold text-stone-100">Describe the change you want to explore</label><p className="mt-1 text-sm text-slate-500">The agents will follow its consequences through the story.</p><textarea value={whatIf} onChange={(e) => setWhatIf(e.target.value)} placeholder="What if Maya never told Arjun about Ravi's betrayal?" rows={4} className="mt-5 w-full resize-none rounded-xl bg-ink p-4 text-sm leading-6 text-stone-100 shadow-neumorphic-inset outline-none ring-1 ring-white/[0.08] transition placeholder:text-slate-700 focus:ring-accent/60" /><button onClick={handleDiverge} disabled={loading || !whatIf.trim()} className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-ink shadow-neumorphic transition hover:brightness-110 active:scale-[0.99] active:shadow-neumorphic-inset disabled:cursor-not-allowed disabled:opacity-40">{loading ? <><LoaderCircle size={18} className="animate-spin" /> Following the consequences...</> : <><GitBranch size={18} /> Generate alternate timeline</>}</button>{error && <p className="mt-4 rounded-xl border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}</div></div>}
+        {branch && <div className="animate-rise-in"><div className="mb-7 rounded-2xl border border-accent/20 bg-accent/[0.05] p-5 shadow-neumorphic"><div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent"><GitBranch size={15} /> Divergence summary</div><p className="text-lg leading-7 text-stone-200">{branch.divergence_summary}</p></div><div className="grid gap-6 lg:grid-cols-2"><Timeline title="Original timeline" events={branch.original_branch} alternate={false} eventTone={eventTone} /><Timeline title="Alternate timeline" events={branch.alternate_branch} alternate eventTone={eventTone} /></div><div className="mt-7 rounded-2xl bg-surface p-6 shadow-neumorphic"><div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><Users size={15} /> Character states after the divergence</div><div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{Object.entries(branch.character_states).map(([id, state]) => <div key={id} className="rounded-xl bg-surface-2 p-4"><div className="font-semibold text-stone-100">{state.name}</div><p className="mt-3 text-xs leading-5 text-slate-400"><span className="text-slate-600">Status</span> {state.status}</p><p className="mt-2 text-xs leading-5 text-slate-400"><span className="text-slate-600">Feels</span> {state.emotional_state}</p><p className="mt-2 text-xs leading-5 text-slate-400"><span className="text-slate-600">Knows</span> {state.key_knowledge}</p></div>)}</div></div><button onClick={() => { setBranch(null); setWhatIf(""); }} className="mt-6 flex items-center gap-2 text-sm text-slate-500 transition hover:text-accent"><ArrowLeft size={15} /> Try another divergence</button></div>}
       </div>
     </div>
   );
+}
+
+function Timeline({ title, events, alternate, eventTone }: { title: string; events: StoryEvent[]; alternate: boolean; eventTone: (event: StoryEvent) => string }) {
+  return <section><div className="mb-4 flex items-center gap-3"><span className={`h-2 w-2 rounded-full ${alternate ? "bg-accent" : "bg-slate-600"}`} /><h2 className={`text-sm font-semibold uppercase tracking-[0.16em] ${alternate ? "text-accent" : "text-slate-400"}`}>{title}</h2></div><div className="space-y-2">{events.map((event, index) => <div key={`${event.id}-${index}`} className={`flex gap-3 rounded-xl border p-4 transition duration-300 ${eventTone(event)}`}><span className="mt-0.5 w-5 shrink-0 text-xs text-slate-600">{String(index + 1).padStart(2, "0")}</span><div><div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-stone-100">{event.title}{event.is_divergence_point && <span className="rounded-md bg-accent/20 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">Branch point</span>}{event.is_changed && !event.is_divergence_point && <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">Changed</span>}</div><p className="mt-1.5 text-xs leading-5 text-slate-500">{event.description}</p></div></div>)}</div></section>;
 }

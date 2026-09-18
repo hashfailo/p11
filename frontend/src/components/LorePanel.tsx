@@ -1,141 +1,27 @@
+import { ArrowRight, BookOpen, CircleUserRound, Globe2, RotateCcw, Sparkles, Users } from "lucide-react";
 import type { Lore, StoryEvent } from "../types";
 
-interface Props {
-  lore: Lore;
-  onSelectEvent: (event: StoryEvent) => void;
-  onReset: () => void;
-}
+interface Props { lore: Lore; onSelectEvent: (event: StoryEvent) => void; onReset: () => void; }
 
 export default function LorePanel({ lore, onSelectEvent, onReset }: Props) {
-  const orderedEvents = lore.timeline
-    .map((id) => lore.events.find((e) => e.id === id))
-    .filter(Boolean) as StoryEvent[];
-
+  const orderedEvents = lore.timeline.map((id) => lore.events.find((e) => e.id === id)).filter(Boolean) as StoryEvent[];
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              {lore.title}
-            </h1>
-            <p className="text-gray-400 mt-1">{lore.summary}</p>
-          </div>
-          <button
-            onClick={onReset}
-            className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-all text-sm"
-          >
-            ↩ New Story
-          </button>
+    <div className="min-h-screen bg-ink px-5 py-10 text-slate-100 sm:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-10 flex items-start justify-between gap-5">
+          <div><div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent"><BookOpen size={15} /> Extracted lore</div><h1 className="text-4xl font-semibold tracking-[-0.03em] text-stone-100 sm:text-5xl">{lore.title}</h1><p className="mt-3 max-w-2xl text-base leading-7 text-slate-400">{lore.summary}</p></div>
+          <button onClick={onReset} className="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 transition hover:bg-surface hover:text-slate-200"><RotateCcw size={14} /> <span className="hidden sm:inline">New story</span></button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Characters */}
-          <div className="lg:col-span-1">
-            <h2 className="text-lg font-semibold text-purple-300 mb-3 flex items-center gap-2">
-              <span>👥</span> Characters
-            </h2>
-            <div className="space-y-3">
-              {lore.characters.map((c) => (
-                <div
-                  key={c.id}
-                  className="bg-gray-900 rounded-xl p-4 border border-gray-800"
-                >
-                  <div className="font-semibold text-white">{c.name}</div>
-                  <div className="text-sm text-gray-400 mt-1">
-                    {c.description}
-                  </div>
-                  {c.traits.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {c.traits.map((t) => (
-                        <span
-                          key={t}
-                          className="text-xs px-2 py-0.5 bg-purple-900/50 text-purple-300 rounded-full"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+          <aside className="space-y-5">
+            <section className="rounded-2xl bg-surface p-5 shadow-neumorphic"><div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400"><Users size={15} /> Characters <span className="ml-auto text-slate-600">{lore.characters.length}</span></div><div className="space-y-4">{lore.characters.map((character) => <div key={character.id} className="border-b border-white/[0.06] pb-4 last:border-0 last:pb-0"><div className="flex items-center gap-2 font-semibold text-stone-100"><CircleUserRound size={16} className="text-accent" />{character.name}</div><p className="mt-2 text-xs leading-5 text-slate-500">{character.description}</p>{character.traits.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{character.traits.map((trait) => <span key={trait} className="rounded-md bg-surface-2 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400">{trait}</span>)}</div>}</div>)}</div></section>
+            <section className="rounded-2xl border border-white/[0.06] bg-surface/70 p-5"><div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"><Globe2 size={15} /> World context</div><p className="text-sm leading-6 text-slate-400">{lore.world_context}</p></section>
+          </aside>
 
-            <div className="mt-4 p-3 bg-gray-900/60 rounded-xl border border-gray-800">
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">
-                World Context
-              </div>
-              <div className="text-sm text-gray-400">{lore.world_context}</div>
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="lg:col-span-2">
-            <h2 className="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
-              <span>⏱</span> Timeline — Select an event to create a "What If?"
-            </h2>
-            <div className="relative">
-              <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-800" />
-              <div className="space-y-3">
-                {orderedEvents.map((event, idx) => (
-                  <div key={event.id} className="relative pl-14">
-                    <div
-                      className="absolute left-3 top-4 w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold
-                      bg-gray-950 border-cyan-600 text-cyan-400"
-                    >
-                      {idx + 1}
-                    </div>
-                    <button
-                      onClick={() => onSelectEvent(event)}
-                      className={`w-full text-left p-4 rounded-xl border transition-all group
-                        ${
-                          event.is_pivotal
-                            ? "border-amber-700/60 bg-amber-900/10 hover:bg-amber-900/20"
-                            : "border-gray-800 bg-gray-900 hover:bg-gray-800"
-                        }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
-                            {event.title}
-                            {event.is_pivotal && (
-                              <span className="ml-2 text-xs px-2 py-0.5 bg-amber-900/60 text-amber-400 rounded-full font-normal">
-                                pivotal
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-400 mt-1">
-                            {event.description}
-                          </div>
-                          {event.characters_involved.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {event.characters_involved.map((cid) => {
-                                const ch = lore.characters.find(
-                                  (c) => c.id === cid,
-                                );
-                                return ch ? (
-                                  <span
-                                    key={cid}
-                                    className="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 rounded-full"
-                                  >
-                                    {ch.name}
-                                  </span>
-                                ) : null;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-gray-600 group-hover:text-cyan-400 text-lg transition-colors flex-shrink-0">
-                          ⚡
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <section><div className="mb-4 flex items-end justify-between"><div><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent"><Sparkles size={15} /> Timeline</div><h2 className="mt-2 text-2xl font-semibold text-stone-100">Choose where reality bends</h2></div><span className="text-xs text-slate-600">{orderedEvents.length} events</span></div>
+            <div className="relative space-y-3 before:absolute before:bottom-6 before:left-[18px] before:top-6 before:w-px before:bg-white/[0.08]">{orderedEvents.map((event, index) => <div key={event.id} className="group relative pl-12 animate-fade-in" style={{ animationDelay: `${index * 45}ms` }}><div className={`absolute left-2 top-5 grid h-5 w-5 place-items-center rounded-full border text-[10px] font-bold transition ${event.is_pivotal ? "border-accent bg-accent text-ink" : "border-white/20 bg-ink text-slate-500 group-hover:border-accent group-hover:text-accent"}`}>{index + 1}</div><button onClick={() => onSelectEvent(event)} className={`w-full rounded-xl p-5 text-left shadow-neumorphic transition duration-300 hover:-translate-y-0.5 hover:bg-surface-2 active:translate-y-0 ${event.is_pivotal ? "border border-accent/25 bg-accent/[0.045]" : "bg-surface"}`}><div className="flex items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2 font-semibold text-stone-100">{event.title}{event.is_pivotal && <span className="rounded-md bg-accent/15 px-2 py-1 text-[10px] uppercase tracking-wider text-accent">Pivotal</span>}</div><p className="mt-2 text-sm leading-6 text-slate-400">{event.description}</p>{event.characters_involved.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{event.characters_involved.map((id) => { const character = lore.characters.find((item) => item.id === id); return character ? <span key={id} className="rounded-md bg-surface-2 px-2 py-1 text-[10px] text-slate-500">{character.name}</span> : null; })}</div>}</div><ArrowRight size={17} className="mt-1 shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-accent" /></div></button></div>)}</div>
+          </section>
         </div>
       </div>
     </div>

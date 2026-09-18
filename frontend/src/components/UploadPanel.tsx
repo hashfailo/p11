@@ -1,11 +1,9 @@
-import { useState, useRef } from "react";
+import { FileText, FolderOpen, LoaderCircle, Sparkles, UploadCloud, XCircle } from "lucide-react";
+import { useRef, useState } from "react";
 import { uploadFile } from "../api";
 import type { Lore } from "../types";
 
-interface Props {
-  onLoreLoaded: (lore: Lore) => void;
-}
-
+interface Props { onLoreLoaded: (lore: Lore) => void; }
 const TEST_STORY = `THE LAST TRAIN
 
 Arjun and Maya have been friends for years.
@@ -23,98 +21,57 @@ Arjun discovers the truth only after the train has departed.`;
 export default function UploadPanel({ onLoreLoaded }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    setError("");
-    setLoading(true);
+    setError(""); setWarning(""); setLoading(true);
     try {
-      const { lore } = await uploadFile(file);
-      onLoreLoaded(lore);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+      const result = await uploadFile(file);
+      if (result.warning) setWarning(result.warning);
+      onLoreLoaded(result.lore);
+    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   };
-
   const handleTestStory = async () => {
     const blob = new Blob([TEST_STORY], { type: "text/plain" });
-    const file = new File([blob], "the_last_train.txt", { type: "text/plain" });
-    await handleFile(file);
+    await handleFile(new File([blob], "the_last_train.txt", { type: "text/plain" }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-8">
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
-            NarrativeOS
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Upload any story. Rewrite history. Talk to the characters.
-          </p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink px-5 py-12 text-slate-100 sm:px-8">
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-80 w-80 -translate-x-1/2 rounded-full bg-accent/[0.035] blur-3xl" />
+      <div className="relative w-full max-w-3xl animate-rise-in">
+        <div className="mb-10 max-w-xl">
+          <div className="mb-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.28em] text-accent">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-surface-2 shadow-neumorphic"><Sparkles size={17} /></span>
+            P11 / Narrative laboratory
+          </div>
+          <h1 className="text-5xl font-semibold tracking-[-0.04em] text-stone-100 sm:text-7xl">Rewrite the<br /><span className="text-accent">known story.</span></h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-slate-400">Extract a world from any story, find its pivotal moments, and explore the timelines that could have been.</p>
         </div>
 
         <div
-          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer
-            ${dragOver ? "border-purple-400 bg-purple-900/20" : "border-gray-700 hover:border-gray-500"}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            const file = e.dataTransfer.files[0];
-            if (file) handleFile(file);
-          }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleFile(file); }}
           onClick={() => inputRef.current?.click()}
+          className={`group rounded-2xl border border-dashed p-8 text-center transition duration-300 sm:p-12 ${dragOver ? "border-accent bg-accent/[0.06] shadow-neumorphic-inset" : "border-white/[0.13] bg-surface shadow-neumorphic hover:border-white/25"}`}
         >
-          <div className="text-5xl mb-4">📄</div>
-          <p className="text-xl text-gray-300 mb-2">
-            Drop a .txt or .pdf file here
-          </p>
-          <p className="text-gray-500 text-sm">or click to browse</p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".txt,.pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-            }}
-          />
+          <input ref={inputRef} type="file" accept=".txt,.pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFile(file); }} />
+          <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-surface-2 text-accent shadow-neumorphic transition duration-300 group-hover:-translate-y-1"><UploadCloud size={26} strokeWidth={1.6} /></div>
+          <h2 className="text-lg font-semibold text-stone-100">Bring a story into the lab</h2>
+          <p className="mt-2 text-sm text-slate-500">Drop a .txt or .pdf file here, or click to browse</p>
+          <div className="mt-5 flex justify-center gap-2 text-[11px] uppercase tracking-wider text-slate-600"><span className="rounded-md bg-surface-2 px-2 py-1">TXT</span><span className="rounded-md bg-surface-2 px-2 py-1">PDF</span></div>
         </div>
 
-        <div className="flex items-center my-6">
-          <div className="flex-1 h-px bg-gray-800" />
-          <span className="px-4 text-gray-600 text-sm">or</span>
-          <div className="flex-1 h-px bg-gray-800" />
-        </div>
-
-        <button
-          onClick={handleTestStory}
-          disabled={loading}
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 font-semibold text-lg transition-all disabled:opacity-50"
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin">⏳</span> Analyzing story...
-            </span>
-          ) : (
-            '⚡ Load Test Story — "The Last Train"'
-          )}
+        <div className="my-7 flex items-center gap-4"><div className="h-px flex-1 bg-white/[0.08]" /><span className="text-xs uppercase tracking-[0.2em] text-slate-600">or start here</span><div className="h-px flex-1 bg-white/[0.08]" /></div>
+        <button onClick={handleTestStory} disabled={loading} className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-accent px-5 font-semibold text-ink shadow-neumorphic transition duration-300 hover:brightness-110 active:scale-[0.99] active:shadow-neumorphic-inset disabled:cursor-wait disabled:opacity-60">
+          {loading ? <><LoaderCircle size={19} className="animate-spin" /> Reading the story...</> : <><FileText size={19} /> Load “The Last Train”</>}
         </button>
-
-        {error && (
-          <div className="mt-4 p-4 rounded-xl bg-red-900/40 border border-red-700 text-red-300">
-            {error}
-          </div>
-        )}
+        {warning && <div className="mt-4 flex items-start gap-2 rounded-xl border border-accent/25 bg-accent/[0.07] p-4 text-sm text-accent"><FolderOpen size={17} className="mt-0.5 shrink-0" />{warning}</div>}
+        {error && <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-900/70 bg-red-950/30 p-4 text-sm text-red-300"><XCircle size={17} className="mt-0.5 shrink-0" />{error}</div>}
+        <p className="mt-6 text-center text-xs text-slate-600">Your story stays in this session. No account required.</p>
       </div>
     </div>
   );
