@@ -5,6 +5,8 @@ The character only knows what they would know given their position in the altern
 import os
 from google import genai
 
+from config import GEMINI_MODEL
+
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 
@@ -78,7 +80,7 @@ def chat_with_character(
     if previous_interaction_id:
         # Continue the conversation
         interaction = client.interactions.create(
-            model="gemini-3-flash-preview",
+            model=GEMINI_MODEL,
             input=message,
             previous_interaction_id=previous_interaction_id,
             system_instruction=system_prompt,
@@ -87,7 +89,7 @@ def chat_with_character(
     else:
         # Start fresh conversation
         interaction = client.interactions.create(
-            model="gemini-3-flash-preview",
+            model=GEMINI_MODEL,
             input=message,
             system_instruction=system_prompt,
             store=True,

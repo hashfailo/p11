@@ -7,6 +7,8 @@ import json
 import os
 from google import genai
 
+from config import GEMINI_MODEL
+
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 def generate_alternate_timeline(lore: dict, event_id: str, what_if: str) -> dict:
@@ -66,7 +68,7 @@ Return the changed divergence event followed by 1-3 concise downstream consequen
 Use the supplied event id for the divergence event and include a state for every character."""
     
     interaction = client.interactions.create(
-        model="gemini-3-flash-preview",
+        model=GEMINI_MODEL,
         input=prompt,
         store=False,
     )

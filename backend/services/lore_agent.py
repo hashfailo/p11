@@ -6,6 +6,8 @@ import json
 import os
 from google import genai
 
+from config import GEMINI_MODEL
+
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 LORE_EXTRACTION_PROMPT = """You are a narrative analysis expert. Analyze the following story text and extract a structured narrative world.
@@ -54,7 +56,7 @@ def extract_lore(text: str) -> dict:
     prompt = LORE_EXTRACTION_PROMPT.replace("{text}", text)
     
     interaction = client.interactions.create(
-        model="gemini-3-flash-preview",
+        model=GEMINI_MODEL,
         input=prompt,
         store=False,
     )
