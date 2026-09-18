@@ -1,17 +1,281 @@
-import { ArrowLeft, CircleUserRound, LoaderCircle, MessageCircle, Send, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  CircleUserRound,
+  LoaderCircle,
+  MessageCircle,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { chat } from "../api";
 import type { BranchContext, Character, ChatMessage, Lore } from "../types";
 
-interface Props { lore: Lore; branch: BranchContext; onBack: () => void; }
+interface Props {
+  lore: Lore;
+  branch: BranchContext;
+  onBack: () => void;
+}
 
 export default function CharacterChat({ lore, branch, onBack }: Props) {
-  const [selectedChar, setSelectedChar] = useState<Character | null>(null); const [branchType, setBranchType] = useState<"alternate" | "original">("alternate"); const [messages, setMessages] = useState<ChatMessage[]>([]); const [input, setInput] = useState(""); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const bottomRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-  const selectCharacter = async (character: Character, timeline: "alternate" | "original") => { setSelectedChar(character); setBranchType(timeline); setMessages([]); setError(""); setLoading(true); try { const result = await chat(character.id, "Hello. Tell me how you are feeling right now.", timeline, true); setMessages([{ role: "character", text: result.response, characterName: result.character_name }]); } catch (e: any) { setError(e.message); } finally { setLoading(false); } };
-  const sendMessage = async () => { if (!input.trim() || !selectedChar || loading) return; const message = input.trim(); setInput(""); setMessages((previous) => [...previous, { role: "user", text: message }]); setLoading(true); setError(""); try { const result = await chat(selectedChar.id, message, branchType, false); setMessages((previous) => [...previous, { role: "character", text: result.response, characterName: result.character_name }]); } catch (e: any) { setError(e.message); } finally { setLoading(false); } };
-  const charState = selectedChar ? branch.character_states[selectedChar.id] : null;
-  return <div className="flex min-h-[calc(100vh-65px)] flex-col bg-ink text-slate-100"><div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-5 sm:px-8"><div className="flex items-center gap-4"><button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 transition hover:text-white"><ArrowLeft size={16} /> Back</button><div className="h-5 w-px bg-white/10" /><div><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent"><MessageCircle size={14} /> 04 / Chat</div><h1 className="mt-1 text-xl font-semibold text-stone-100">Inside the story</h1></div></div>{selectedChar && <div className="flex items-center gap-1 rounded-xl bg-surface p-1 shadow-neumorphic"><button onClick={() => selectCharacter(selectedChar, "original")} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${branchType === "original" ? "bg-surface-2 text-stone-100 shadow-neumorphic-inset" : "text-slate-500 hover:text-slate-300"}`}>Original</button><button onClick={() => selectCharacter(selectedChar, "alternate")} className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${branchType === "alternate" ? "bg-accent text-ink shadow-neumorphic" : "text-slate-500 hover:text-slate-300"}`}>Alternate</button></div>}</div>
-    <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden px-5 sm:px-8"><aside className="w-64 shrink-0 border-r border-white/[0.06] py-6 pr-5 max-md:hidden"><div className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Characters</div><div className="space-y-2">{lore.characters.map((character) => { const state = branch.character_states[character.id]; const selected = selectedChar?.id === character.id; return <button key={character.id} onClick={() => selectCharacter(character, branchType)} className={`w-full rounded-xl p-3 text-left transition duration-300 ${selected ? "bg-accent/[0.08] shadow-neumorphic-inset ring-1 ring-accent/50" : "bg-surface hover:bg-surface-2"}`}><div className="flex items-center gap-2 text-sm font-semibold text-stone-100"><CircleUserRound size={16} className={selected ? "text-accent" : "text-slate-500"} />{character.name}</div>{state && <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{state.emotional_state}</p>}</button>; })}</div>{selectedChar && charState && <div className="mt-5 rounded-xl border border-white/[0.06] bg-surface p-4"><div className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Current state</div><p className="text-xs leading-5 text-slate-400"><span className="text-slate-600">Knows</span> {charState.key_knowledge}</p><p className="mt-2 text-xs leading-5 text-slate-400"><span className="text-slate-600">Status</span> {charState.status}</p></div>}</aside>
-      <section className="flex min-w-0 flex-1 flex-col md:pl-8">{!selectedChar ? <div className="flex flex-1 items-center justify-center py-24"><div className="max-w-sm text-center"><div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-surface text-accent shadow-neumorphic"><Sparkles size={25} /></div><h2 className="text-xl font-semibold text-stone-100">Choose a character</h2><p className="mt-2 text-sm leading-6 text-slate-500">Step into the selected branch and ask them what they remember.</p><div className="mt-5 flex flex-wrap justify-center gap-2 md:hidden">{lore.characters.map((character) => <button key={character.id} onClick={() => selectCharacter(character, branchType)} className="rounded-lg bg-surface px-3 py-2 text-sm text-slate-300 shadow-neumorphic">{character.name}</button>)}</div></div></div> : <><div className={`flex items-center gap-2 border-b px-1 py-3 text-xs ${branchType === "alternate" ? "border-accent/20 text-accent" : "border-white/[0.06] text-slate-500"}`}><span className={`h-1.5 w-1.5 rounded-full ${branchType === "alternate" ? "bg-accent" : "bg-slate-600"}`} /> Speaking with <strong className="text-stone-100">{selectedChar.name}</strong> in the {branchType} timeline{branchType === "alternate" && <span className="ml-1 truncate text-slate-600">— {branch.divergence_summary}</span>}</div><div className="flex-1 space-y-4 overflow-y-auto py-6">{messages.map((message, index) => <div key={index} className={`flex animate-fade-in ${message.role === "user" ? "justify-end" : "justify-start"}`}><div className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-sm bg-accent text-ink" : "rounded-bl-sm bg-surface shadow-neumorphic"}`}>{message.role === "character" && <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-accent">{message.characterName}</div>}{message.text}</div></div>)}{loading && <div className="flex items-center gap-2 text-xs text-slate-500"><LoaderCircle size={15} className="animate-spin text-accent" /> {selectedChar.name} is considering...</div>}<div ref={bottomRef} /></div>{error && <div className="mb-3 rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-xs text-red-300">{error}</div>}<div className="mb-6 rounded-2xl bg-surface p-2 shadow-neumorphic"><div className="flex items-end gap-2"><textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={`Ask ${selectedChar.name} something...`} rows={2} className="min-h-12 flex-1 resize-none bg-transparent px-3 py-2 text-sm leading-6 text-stone-100 outline-none placeholder:text-slate-600" /><button onClick={sendMessage} disabled={loading || !input.trim()} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-ink shadow-neumorphic transition hover:brightness-110 active:scale-95 disabled:opacity-30"><Send size={17} /></button></div><div className="px-3 pb-1 pt-1 text-[10px] uppercase tracking-wider text-slate-600">Enter to send · Shift + Enter for a new line</div></div></>}</section></div></div>;
+  const [selectedChar, setSelectedChar] = useState<Character | null>(null);
+  const [branchType, setBranchType] = useState<"alternate" | "original">(
+    "alternate",
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+  const selectCharacter = async (
+    character: Character,
+    timeline: "alternate" | "original",
+  ) => {
+    setSelectedChar(character);
+    setBranchType(timeline);
+    setMessages([]);
+    setError("");
+    setLoading(true);
+    try {
+      const result = await chat(
+        character.id,
+        "Hello. Tell me how you are feeling right now.",
+        timeline,
+        true,
+      );
+      setMessages([
+        {
+          role: "character",
+          text: result.response,
+          characterName: result.character_name,
+        },
+      ]);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const sendMessage = async () => {
+    if (!input.trim() || !selectedChar || loading) return;
+    const message = input.trim();
+    setInput("");
+    setMessages((previous) => [...previous, { role: "user", text: message }]);
+    setLoading(true);
+    setError("");
+    try {
+      const result = await chat(selectedChar.id, message, branchType, false);
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "character",
+          text: result.response,
+          characterName: result.character_name,
+        },
+      ]);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const charState = selectedChar
+    ? branch.character_states[selectedChar.id]
+    : null;
+  return (
+    <div className="flex min-h-[calc(100vh-65px)] flex-col bg-ink text-slate-100">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-5 sm:px-8">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-sm text-slate-500 transition hover:text-white"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+          <div className="h-5 w-px bg-white/10" />
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <MessageCircle size={14} /> 04 / Chat
+            </div>
+            <h1 className="mt-1 text-xl font-semibold text-stone-100">
+              Inside the story
+            </h1>
+          </div>
+        </div>
+        {selectedChar && (
+          <div className="flex items-center gap-1 rounded-xl bg-surface p-1 shadow-neumorphic">
+            <button
+              onClick={() => selectCharacter(selectedChar, "original")}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${branchType === "original" ? "bg-surface-2 text-stone-100 shadow-neumorphic-inset" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              Original
+            </button>
+            <button
+              onClick={() => selectCharacter(selectedChar, "alternate")}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${branchType === "alternate" ? "bg-accent text-ink shadow-neumorphic" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              Alternate
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden px-5 sm:px-8">
+        <aside className="w-64 shrink-0 border-r border-white/[0.06] py-6 pr-5 max-md:hidden">
+          <div className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Characters
+          </div>
+          <div className="space-y-2">
+            {lore.characters.map((character) => {
+              const state = branch.character_states[character.id];
+              const selected = selectedChar?.id === character.id;
+              return (
+                <button
+                  key={character.id}
+                  onClick={() => selectCharacter(character, branchType)}
+                  className={`w-full rounded-xl p-3 text-left transition duration-300 ${selected ? "bg-accent/[0.08] shadow-neumorphic-inset ring-1 ring-accent/50" : "bg-surface hover:bg-surface-2"}`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-stone-100">
+                    <CircleUserRound
+                      size={16}
+                      className={selected ? "text-accent" : "text-slate-500"}
+                    />
+                    {character.name}
+                  </div>
+                  {state && (
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
+                      {state.emotional_state}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {selectedChar && charState && (
+            <div className="mt-5 rounded-xl border border-white/[0.06] bg-surface p-4">
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                Current state
+              </div>
+              <p className="text-xs leading-5 text-slate-400">
+                <span className="text-slate-600">Knows</span>{" "}
+                {charState.key_knowledge}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                <span className="text-slate-600">Status</span>{" "}
+                {charState.status}
+              </p>
+            </div>
+          )}
+        </aside>
+        <section className="flex min-w-0 flex-1 flex-col md:pl-8">
+          {!selectedChar ? (
+            <div className="flex flex-1 items-center justify-center py-24">
+              <div className="max-w-sm text-center">
+                <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-surface text-accent shadow-neumorphic">
+                  <Sparkles size={25} />
+                </div>
+                <h2 className="text-xl font-semibold text-stone-100">
+                  Choose a character
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Step into the selected branch and ask them what they remember.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-2 md:hidden">
+                  {lore.characters.map((character) => (
+                    <button
+                      key={character.id}
+                      onClick={() => selectCharacter(character, branchType)}
+                      className="rounded-lg bg-surface px-3 py-2 text-sm text-slate-300 shadow-neumorphic"
+                    >
+                      {character.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                className={`flex items-center gap-2 border-b px-1 py-3 text-xs ${branchType === "alternate" ? "border-accent/20 text-accent" : "border-white/[0.06] text-slate-500"}`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${branchType === "alternate" ? "bg-accent" : "bg-slate-600"}`}
+                />{" "}
+                Speaking with{" "}
+                <strong className="text-stone-100">{selectedChar.name}</strong>{" "}
+                in the {branchType} timeline
+                {branchType === "alternate" && (
+                  <span className="ml-1 truncate text-slate-600">
+                    — {branch.divergence_summary}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 space-y-4 overflow-y-auto py-6">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex animate-fade-in ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "rounded-br-sm bg-accent text-ink" : "rounded-bl-sm bg-surface shadow-neumorphic"}`}
+                    >
+                      {message.role === "character" && (
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                          {message.characterName}
+                        </div>
+                      )}
+                      {message.text}
+                    </div>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <LoaderCircle
+                      size={15}
+                      className="animate-spin text-accent"
+                    />{" "}
+                    {selectedChar.name} is considering...
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
+              {error && (
+                <div className="mb-3 rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-xs text-red-300">
+                  {error}
+                </div>
+              )}
+              <div className="mb-6 rounded-2xl bg-surface p-2 shadow-neumorphic">
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder={`Ask ${selectedChar.name} something...`}
+                    rows={2}
+                    className="min-h-12 flex-1 resize-none bg-transparent px-3 py-2 text-sm leading-6 text-stone-100 outline-none placeholder:text-slate-600"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-ink shadow-neumorphic transition hover:brightness-110 active:scale-95 disabled:opacity-30"
+                  >
+                    <Send size={17} />
+                  </button>
+                </div>
+                <div className="px-3 pb-1 pt-1 text-[10px] uppercase tracking-wider text-slate-600">
+                  Enter to send · Shift + Enter for a new line
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    </div>
+  );
 }

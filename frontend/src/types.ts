@@ -43,9 +43,9 @@ export interface BranchContext {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'character';
+  role: "user" | "character";
   text: string;
   characterName?: string;
 }
 
-export type AppStep = 'upload' | 'lore' | 'diverge' | 'chat';
+export type AppStep = "upload" | "lore" | "diverge" | "chat";
