@@ -67,7 +67,6 @@ def chat_with_character(
     branch_context: dict,
     branch_type: str,
     message: str,
-    conversation_history: list,
     previous_interaction_id: str = None,
 ) -> tuple[str, str]:
     """

@@ -4,10 +4,10 @@ Multi-Agent Narrative Framework — FastAPI Backend
 import io
 import json
 import os
-from typing import Optional
+from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -27,13 +27,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory state
-state: dict = {
-    "lore": None,
-    "branch_context": None,
-    "branch_type": "original",
-    "chat_interaction_id": None,
-}
+MAX_SOURCE_CHARS = 100_000
+
+# In-memory state, isolated by client-provided or generated session ID.
+sessions: dict[str, dict] = {}
 
 
 class DivergenceRequest(BaseModel):
@@ -62,13 +59,25 @@ def extract_text_from_pdf(data: bytes) -> str:
         raise HTTPException(status_code=400, detail=f"PDF extraction failed: {e}")
 
 
+def get_session(session_id: str | None) -> dict:
+    if not session_id or session_id not in sessions:
+        raise HTTPException(
+            status_code=400,
+            detail="A valid X-Session-ID header is required. Upload a story first.",
+        )
+    return sessions[session_id]
+
+
 @app.get("/")
 def root():
     return {"status": "Narrative Framework API is running"}
 
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    x_session_id: str | None = Header(default=None),
+):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -76,6 +85,11 @@ async def upload_file(file: UploadFile = File(...)):
 
     if file.filename.lower().endswith(".pdf"):
         text = extract_text_from_pdf(data)
+        if len(text.strip()) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail="This PDF has no extractable text and may be scanned or image-based.",
+            )
     elif file.filename.lower().endswith(".txt"):
         text = data.decode("utf-8", errors="replace")
     else:
@@ -84,6 +98,15 @@ async def upload_file(file: UploadFile = File(...)):
     if len(text.strip()) < 20:
         raise HTTPException(status_code=400, detail="Extracted text is too short")
 
+    source_length = len(text)
+    warning = None
+    if source_length > MAX_SOURCE_CHARS:
+        text = text[:MAX_SOURCE_CHARS]
+        warning = (
+            f"Document exceeded the {MAX_SOURCE_CHARS:,}-character limit; "
+            "only the beginning was analyzed."
+        )
+
     try:
         lore = extract_lore(text)
     except json.JSONDecodeError as e:
@@ -91,23 +114,38 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lore extraction failed: {e}")
 
-    state["lore"] = lore
-    state["branch_context"] = None
-    state["branch_type"] = "original"
-    state["chat_interaction_id"] = None
+    session_id = x_session_id or str(uuid4())
+    sessions[session_id] = {
+        "lore": lore,
+        "branch_context": None,
+        "branch_type": "original",
+        "chat_interaction_id": None,
+    }
 
-    return {"lore": lore, "source_length": len(text)}
+    response = {
+        "lore": lore,
+        "source_length": source_length,
+        "session_id": session_id,
+    }
+    if warning:
+        response["warning"] = warning
+    return response
 
 
 @app.get("/lore")
-def get_lore():
+def get_lore(x_session_id: str | None = Header(default=None)):
+    state = get_session(x_session_id)
     if not state["lore"]:
         raise HTTPException(status_code=404, detail="No lore loaded. Upload a file first.")
     return {"lore": state["lore"]}
 
 
 @app.post("/diverge")
-def diverge(req: DivergenceRequest):
+def diverge(
+    req: DivergenceRequest,
+    x_session_id: str | None = Header(default=None),
+):
+    state = get_session(x_session_id)
     if not state["lore"]:
         raise HTTPException(status_code=400, detail="No lore loaded. Upload a file first.")
 
@@ -132,7 +170,11 @@ def diverge(req: DivergenceRequest):
 
 
 @app.post("/chat")
-def chat(req: ChatRequest):
+def chat(
+    req: ChatRequest,
+    x_session_id: str | None = Header(default=None),
+):
+    state = get_session(x_session_id)
     if not state["lore"]:
         raise HTTPException(status_code=400, detail="No lore loaded")
 
@@ -169,7 +211,6 @@ def chat(req: ChatRequest):
             branch_context=branch_context,
             branch_type=req.branch_type,
             message=req.message,
-            conversation_history=[],
             previous_interaction_id=prev_id,
         )
     except Exception as e:
@@ -181,9 +222,8 @@ def chat(req: ChatRequest):
 
 
 @app.delete("/reset")
-def reset():
-    state["lore"] = None
-    state["branch_context"] = None
-    state["branch_type"] = "original"
-    state["chat_interaction_id"] = None
+def reset(x_session_id: str | None = Header(default=None)):
+    if not x_session_id or x_session_id not in sessions:
+        raise HTTPException(status_code=400, detail="A valid X-Session-ID header is required.")
+    del sessions[x_session_id]
     return {"status": "reset"}
