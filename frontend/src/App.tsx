@@ -41,7 +41,7 @@ export default function App() {
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-surface-2 text-accent shadow-neumorphic">
                 <RotateCcw size={14} />
               </span>
-              <span className="hidden sm:inline">P11</span>
+              <span className="hidden sm:inline">Altera</span>
             </button>
             <nav
               className="flex items-center gap-1 sm:gap-2"

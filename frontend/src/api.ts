@@ -1,7 +1,7 @@
 import type { BranchContext, Lore } from "./types";
 
 const BASE = "/api";
-const SESSION_KEY = "p11_session_id";
+const SESSION_KEY = "altera_session_id";
 
 function sessionHeaders(): HeadersInit {
   const sessionId = localStorage.getItem(SESSION_KEY);

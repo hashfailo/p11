@@ -64,7 +64,7 @@ export default function UploadPanel({ onLoreLoaded }: Props) {
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-surface-2 shadow-neumorphic">
               <Sparkles size={17} />
             </span>
-            P11 / Narrative laboratory
+            Altera / Narrative laboratory
           </div>
           <h1 className="text-5xl font-semibold tracking-[-0.04em] text-stone-100 sm:text-7xl">
             Rewrite the
