@@ -23,6 +23,8 @@ def combine_lores(lore_a: dict, lore_b: dict) -> dict:
     prompt = f"""Combine these two extracted stories into one coherent shared narrative universe.
 Preserve important characters and events, resolve conflicts sensibly, and make the result concise.
 Use globally unique IDs for every character and event (prefix source-specific IDs with a_ or b_).
+Preserve each source character's useful traits; every character with source traits must have a
+non-empty traits array in the result. If characters are merged, combine their useful traits.
 Update characters_involved and timeline to match those IDs.
 
 STORY A:
@@ -40,7 +42,7 @@ Return ONLY valid JSON matching this exact schema:
       "id": "a_character_id",
       "name": "Character Name",
       "description": "Brief description",
-      "traits": ["trait"],
+      "traits": ["preserved source trait"],
       "relationships": {{}}
     }}
   ],
@@ -80,4 +82,20 @@ Return ONLY valid JSON matching this exact schema:
     ids.extend(event["id"] for event in combined["events"])
     if len(ids) != len(set(ids)):
         raise ValueError("Multiverse Agent returned duplicate character or event IDs")
+
+    source_characters = lore_a.get("characters", []) + lore_b.get("characters", [])
+    for character in combined["characters"]:
+        if character.get("traits"):
+            continue
+        matches = [
+            source
+            for source in source_characters
+            if source.get("id") in character.get("id", "")
+            or source.get("name", "").casefold() == character.get("name", "").casefold()
+        ]
+        character["traits"] = [
+            trait
+            for source in matches
+            for trait in source.get("traits", [])
+        ]
     return combined

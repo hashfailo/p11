@@ -128,7 +128,6 @@ export default function CharacterChat({ lore, branch, onBack }: Props) {
           </div>
           <div className="space-y-2">
             {lore.characters.map((character) => {
-              const state = branch.character_states[character.id];
               const selected = selectedChar?.id === character.id;
               return (
                 <button
@@ -143,9 +142,9 @@ export default function CharacterChat({ lore, branch, onBack }: Props) {
                     />
                     {character.name}
                   </div>
-                  {state && (
+                  {character.traits.length > 0 && (
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
-                      {state.emotional_state}
+                      {character.traits.join(" · ")}
                     </p>
                   )}
                 </button>
