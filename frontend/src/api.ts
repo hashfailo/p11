@@ -8,6 +8,10 @@ function sessionHeaders(): HeadersInit {
   return sessionId ? { "X-Session-ID": sessionId } : {};
 }
 
+function saveSessionId(sessionId: string) {
+  localStorage.setItem(SESSION_KEY, sessionId);
+}
+
 export async function uploadFile(
   file: File,
 ): Promise<{
@@ -28,7 +32,28 @@ export async function uploadFile(
     throw new Error(err.detail || "Upload failed");
   }
   const result = await res.json();
-  localStorage.setItem(SESSION_KEY, result.session_id);
+  saveSessionId(result.session_id);
+  return result;
+}
+
+export async function uploadMultiverseFiles(
+  fileA: File,
+  fileB: File,
+): Promise<{ lore: Lore; session_id: string; mode: "multiverse" }> {
+  const form = new FormData();
+  form.append("file_a", fileA);
+  form.append("file_b", fileB);
+  const res = await fetch(`${BASE}/multiverse`, {
+    method: "POST",
+    body: form,
+    headers: sessionHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Multiverse generation failed");
+  }
+  const result = await res.json();
+  saveSessionId(result.session_id);
   return result;
 }
 

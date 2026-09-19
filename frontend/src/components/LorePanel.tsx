@@ -6,16 +6,19 @@ import {
   RotateCcw,
   Sparkles,
   Users,
+  MessageCircle,
 } from "lucide-react";
-import type { Lore, StoryEvent } from "../types";
+import type { Lore, StoryEvent, StoryMode } from "../types";
 
 interface Props {
   lore: Lore;
   onSelectEvent: (event: StoryEvent) => void;
   onReset: () => void;
+  mode?: StoryMode;
+  onContinueToChat?: () => void;
 }
 
-export default function LorePanel({ lore, onSelectEvent, onReset }: Props) {
+export default function LorePanel({ lore, onSelectEvent, onReset, mode = "single", onContinueToChat }: Props) {
   const orderedEvents = lore.timeline
     .map((id) => lore.events.find((e) => e.id === id))
     .filter(Boolean) as StoryEvent[];
@@ -25,7 +28,7 @@ export default function LorePanel({ lore, onSelectEvent, onReset }: Props) {
         <div className="mb-10 flex items-start justify-between gap-5">
           <div>
             <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-              <BookOpen size={15} /> Extracted lore
+              <BookOpen size={15} /> {mode === "multiverse" ? "Multiverse Mode" : "Extracted lore"}
             </div>
             <h1 className="text-4xl font-semibold tracking-[-0.03em] text-stone-100 sm:text-5xl">
               {lore.title}
@@ -98,12 +101,14 @@ export default function LorePanel({ lore, onSelectEvent, onReset }: Props) {
                   <Sparkles size={15} /> Timeline
                 </div>
                 <h2 className="mt-2 text-2xl font-semibold text-stone-100">
-                  Choose where reality bends
+                  {mode === "multiverse" ? "Explore the combined timeline" : "Choose where reality bends"}
                 </h2>
               </div>
-              <span className="text-xs text-slate-600">
-                {orderedEvents.length} events
-              </span>
+              {mode === "multiverse" ? (
+                <button onClick={onContinueToChat} className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-ink shadow-neumorphic transition hover:brightness-110">
+                  <MessageCircle size={14} /> Enter chat
+                </button>
+              ) : <span className="text-xs text-slate-600">{orderedEvents.length} events</span>}
             </div>
             <div className="relative space-y-3 before:absolute before:bottom-6 before:left-[18px] before:top-6 before:w-px before:bg-white/[0.08]">
               {orderedEvents.map((event, index) => (

@@ -11,7 +11,7 @@ import UploadPanel from "./components/UploadPanel";
 import LorePanel from "./components/LorePanel";
 import DivergencePanel from "./components/DivergencePanel";
 import CharacterChat from "./components/CharacterChat";
-import type { AppStep, Lore, StoryEvent, BranchContext } from "./types";
+import type { AppStep, Lore, StoryEvent, BranchContext, StoryMode } from "./types";
 
 const steps: { key: AppStep; label: string; icon: typeof Upload }[] = [
   { key: "upload", label: "Upload", icon: Upload },
@@ -25,6 +25,7 @@ export default function App() {
   const [lore, setLore] = useState<Lore | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<StoryEvent | null>(null);
   const [branch, setBranch] = useState<BranchContext | null>(null);
+  const [mode, setMode] = useState<StoryMode>("single");
 
   const stepOrder = { upload: 0, lore: 1, diverge: 2, chat: 3 };
   const currentOrder = stepOrder[step];
@@ -90,8 +91,11 @@ export default function App() {
       <main className={step !== "upload" ? "animate-fade-in" : ""}>
         {step === "upload" && (
           <UploadPanel
-            onLoreLoaded={(loaded) => {
+            onLoreLoaded={(loaded, nextMode) => {
               setLore(loaded);
+              setMode(nextMode);
+              setSelectedEvent(null);
+              setBranch(nextMode === "multiverse" ? createOriginalBranch(loaded) : null);
               setStep("lore");
             }}
           />
@@ -103,6 +107,8 @@ export default function App() {
               setSelectedEvent(event);
               setStep("diverge");
             }}
+            mode={mode}
+            onContinueToChat={() => setStep("chat")}
             onReset={() => {
               setLore(null);
               setBranch(null);
@@ -137,4 +143,23 @@ export default function App() {
       </main>
     </div>
   );
+}
+
+function createOriginalBranch(lore: Lore): BranchContext {
+  return {
+    divergence_summary: "Combined universe — no changes",
+    original_branch: lore.events,
+    alternate_branch: lore.events,
+    character_states: Object.fromEntries(
+      lore.characters.map((character) => [
+        character.id,
+        {
+          name: character.name,
+          status: character.description,
+          emotional_state: "as described in the combined story",
+          key_knowledge: "events as they happened in the combined universe",
+        },
+      ]),
+    ),
+  };
 }

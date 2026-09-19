@@ -49,3 +49,4 @@ export interface ChatMessage {
 }
 
 export type AppStep = "upload" | "lore" | "diverge" | "chat";
+export type StoryMode = "single" | "multiverse";

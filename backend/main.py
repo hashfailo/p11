@@ -16,6 +16,7 @@ load_dotenv()
 from services.character_agent import chat_with_character
 from services.divergence_agent import generate_alternate_timeline
 from services.lore_agent import extract_lore
+from services.multiverse_agent import combine_lores
 
 app = FastAPI(title="Narrative Framework API", version="1.0.0")
 
@@ -59,6 +60,28 @@ def extract_text_from_pdf(data: bytes) -> str:
         raise HTTPException(status_code=400, detail=f"PDF extraction failed: {e}")
 
 
+async def extract_story_text(file: UploadFile) -> str:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    data = await file.read()
+    if file.filename.lower().endswith(".pdf"):
+        text = extract_text_from_pdf(data)
+        if len(text.strip()) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail="This PDF has no extractable text and may be scanned or image-based.",
+            )
+    elif file.filename.lower().endswith(".txt"):
+        text = data.decode("utf-8", errors="replace")
+    else:
+        raise HTTPException(status_code=400, detail="Only .txt and .pdf files are supported")
+
+    if len(text.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Extracted text is too short")
+    return text
+
+
 def get_session(session_id: str | None) -> dict:
     if not session_id or session_id not in sessions:
         raise HTTPException(
@@ -78,25 +101,7 @@ async def upload_file(
     file: UploadFile = File(...),
     x_session_id: str | None = Header(default=None),
 ):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
-
-    data = await file.read()
-
-    if file.filename.lower().endswith(".pdf"):
-        text = extract_text_from_pdf(data)
-        if len(text.strip()) < 20:
-            raise HTTPException(
-                status_code=400,
-                detail="This PDF has no extractable text and may be scanned or image-based.",
-            )
-    elif file.filename.lower().endswith(".txt"):
-        text = data.decode("utf-8", errors="replace")
-    else:
-        raise HTTPException(status_code=400, detail="Only .txt and .pdf files are supported")
-
-    if len(text.strip()) < 20:
-        raise HTTPException(status_code=400, detail="Extracted text is too short")
+    text = await extract_story_text(file)
 
     source_length = len(text)
     warning = None
@@ -130,6 +135,42 @@ async def upload_file(
     if warning:
         response["warning"] = warning
     return response
+
+
+@app.post("/multiverse")
+async def multiverse(
+    file_a: UploadFile = File(...),
+    file_b: UploadFile = File(...),
+    x_session_id: str | None = Header(default=None),
+):
+    try:
+        text_a = await extract_story_text(file_a)
+        text_b = await extract_story_text(file_b)
+        lore_a = extract_lore(text_a)
+        lore_b = extract_lore(text_b)
+        combined_lore = combine_lores(lore_a, lore_b)
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"LLM returned invalid JSON: {e}")
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=f"Multiverse generation failed: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Multiverse generation failed: {e}")
+
+    session_id = x_session_id or str(uuid4())
+    sessions[session_id] = {
+        "lore": combined_lore,
+        "branch_context": None,
+        "branch_type": "original",
+        "chat_interaction_id": None,
+        "mode": "multiverse",
+    }
+    return {
+        "session_id": session_id,
+        "mode": "multiverse",
+        "lore": combined_lore,
+    }
 
 
 @app.get("/lore")
